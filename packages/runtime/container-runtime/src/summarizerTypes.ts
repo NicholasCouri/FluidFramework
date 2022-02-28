@@ -7,6 +7,7 @@ import {
     IEvent,
     IEventProvider,
     ITelemetryLogger,
+    ITelemetryProperties,
 } from "@fluidframework/common-definitions";
 import {
     IFluidLoadable,
@@ -367,3 +368,8 @@ export interface ISummarizeHeuristicRunner {
     /** Disposes of resources */
     dispose(): void;
 }
+
+export type ISummarizeTelemetryPropertyKeys =
+    "summarizeReason" | "summaryAttempts" | "summaryAttemptsPerPhase" | "summaryAttemptPhase" | keyof ISummarizeOptions;
+export type ISummarizeTelemetryProperties = Partial<Pick<ITelemetryProperties, ISummarizeTelemetryPropertyKeys>>;
+
