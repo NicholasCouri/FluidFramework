@@ -160,6 +160,7 @@ describe("OdspErrorUtils", () => {
 
 			assert.deepStrictEqual(error.facetCodes, ["bar", "foo"]);
 			assert(isILoggingError(error));
+			assert.equal(error.getTelemetryProperties().response, responseText);
 			assert.equal(error.getTelemetryProperties().innerMostErrorCode, "bar");
 		});
 		it("error response with redirect location", () => {
