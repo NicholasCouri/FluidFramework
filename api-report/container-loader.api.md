@@ -40,6 +40,11 @@ export interface ICodeDetailsLoader extends Partial<IProvideFluidCodeDetailsComp
     load(source: IFluidCodeDetails): Promise<IFluidModuleWithDetails>;
 }
 
+// @internal
+export interface IContainerExperimental extends IContainer {
+    getPendingLocalState(): string;
+}
+
 // @public
 export type IDetachedBlobStorage = Pick<IDocumentStorageService, "createBlob" | "readBlob"> & {
     size: number;

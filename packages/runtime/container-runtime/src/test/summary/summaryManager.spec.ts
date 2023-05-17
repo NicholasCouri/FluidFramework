@@ -40,6 +40,19 @@ class MockRuntime {
 	constructor(
 		public readonly deltaManager: IDeltaManager<ISequencedDocumentMessage, IDocumentMessage>,
 	) {}
+	public on(
+		_event: "op",
+		_listener: (op: ISequencedDocumentMessage, runtimeMessage?: boolean) => void,
+	) {
+		return this;
+	}
+
+	public off(
+		_event: "op",
+		_listener: (op: ISequencedDocumentMessage, runtimeMessage?: boolean) => void,
+	) {
+		return this;
+	}
 }
 
 describe("Summary Manager", () => {
@@ -77,6 +90,7 @@ describe("Summary Manager", () => {
 		minimumSequenceNumber: 5,
 		referenceSequenceNumber: 5,
 		sequenceNumber: 6,
+		// "term" was an experimental feature that is being removed.  The only safe value to use is 1.
 		term: 1,
 		timestamp: 6,
 		type: MessageType.Summarize,
@@ -153,7 +167,6 @@ describe("Summary Manager", () => {
 				},
 				async (options) => {},
 				new SummarizeHeuristicData(0, { refSequenceNumber: 0, summaryTime: Date.now() }),
-				() => {},
 				summaryCollection,
 				neverCancelledSummaryToken,
 				// stopSummarizerCallback

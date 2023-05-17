@@ -1584,6 +1584,7 @@ declare function get_current_TypeAliasDeclaration_MergeTreeDeltaRevertible():
 declare function use_old_TypeAliasDeclaration_MergeTreeDeltaRevertible(
     use: TypeOnly<old.MergeTreeDeltaRevertible>);
 use_old_TypeAliasDeclaration_MergeTreeDeltaRevertible(
+    // @ts-expect-error compatibility expected to be broken
     get_current_TypeAliasDeclaration_MergeTreeDeltaRevertible());
 
 /*
@@ -1728,6 +1729,7 @@ declare function get_current_InterfaceDeclaration_MergeTreeRevertibleDriver():
 declare function use_old_InterfaceDeclaration_MergeTreeRevertibleDriver(
     use: TypeOnly<old.MergeTreeRevertibleDriver>);
 use_old_InterfaceDeclaration_MergeTreeRevertibleDriver(
+    // @ts-expect-error compatibility expected to be broken
     get_current_InterfaceDeclaration_MergeTreeRevertibleDriver());
 
 /*

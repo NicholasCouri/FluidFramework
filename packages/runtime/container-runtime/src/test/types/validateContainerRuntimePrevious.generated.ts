@@ -83,6 +83,7 @@ declare function get_current_EnumDeclaration_ContainerMessageType():
 declare function use_old_EnumDeclaration_ContainerMessageType(
     use: TypeOnly<old.ContainerMessageType>);
 use_old_EnumDeclaration_ContainerMessageType(
+    // @ts-expect-error compatibility expected to be broken
     get_current_EnumDeclaration_ContainerMessageType());
 
 /*
@@ -108,6 +109,7 @@ declare function get_current_ClassDeclaration_ContainerRuntime():
 declare function use_old_ClassDeclaration_ContainerRuntime(
     use: TypeOnly<old.ContainerRuntime>);
 use_old_ClassDeclaration_ContainerRuntime(
+    // @ts-expect-error compatibility expected to be broken
     get_current_ClassDeclaration_ContainerRuntime());
 
 /*
@@ -132,6 +134,7 @@ declare function get_current_InterfaceDeclaration_ContainerRuntimeMessage():
 declare function use_old_InterfaceDeclaration_ContainerRuntimeMessage(
     use: TypeOnly<old.ContainerRuntimeMessage>);
 use_old_InterfaceDeclaration_ContainerRuntimeMessage(
+    // @ts-expect-error compatibility expected to be broken
     get_current_InterfaceDeclaration_ContainerRuntimeMessage());
 
 /*
@@ -372,6 +375,7 @@ declare function get_current_InterfaceDeclaration_IChunkedOp():
 declare function use_old_InterfaceDeclaration_IChunkedOp(
     use: TypeOnly<old.IChunkedOp>);
 use_old_InterfaceDeclaration_IChunkedOp(
+    // @ts-expect-error compatibility expected to be broken
     get_current_InterfaceDeclaration_IChunkedOp());
 
 /*
@@ -864,6 +868,7 @@ declare function get_old_InterfaceDeclaration_ISummarizerRuntime():
 declare function use_current_InterfaceDeclaration_ISummarizerRuntime(
     use: TypeOnly<current.ISummarizerRuntime>);
 use_current_InterfaceDeclaration_ISummarizerRuntime(
+    // @ts-expect-error compatibility expected to be broken
     get_old_InterfaceDeclaration_ISummarizerRuntime());
 
 /*

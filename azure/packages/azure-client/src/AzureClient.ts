@@ -20,6 +20,7 @@ import { IClient, SummaryType } from "@fluidframework/protocol-definitions";
 import { RouterliciousDocumentServiceFactory } from "@fluidframework/routerlicious-driver";
 import { requestFluidObject } from "@fluidframework/runtime-utils";
 
+import { IConfigProviderBase } from "@fluidframework/telemetry-utils";
 import { AzureAudience } from "./AzureAudience";
 import { AzureUrlResolver, createAzureCreateNewRequest } from "./AzureUrlResolver";
 import {
@@ -50,6 +51,7 @@ const MAX_VERSION_COUNT = 5;
 export class AzureClient {
 	private readonly documentServiceFactory: IDocumentServiceFactory;
 	private readonly urlResolver: IUrlResolver;
+	private readonly configProvider: IConfigProviderBase | undefined;
 
 	/**
 	 * Creates a new client instance using configuration parameters.
@@ -66,6 +68,7 @@ export class AzureClient {
 			this.props.connection.tokenProvider,
 			{ enableWholeSummaryUpload: isRemoteConnection, enableDiscovery: isRemoteConnection },
 		);
+		this.configProvider = props.configProvider;
 	}
 
 	/**
@@ -225,6 +228,7 @@ export class AzureClient {
 			codeLoader,
 			logger: this.props.logger,
 			options: { client },
+			configProvider: this.configProvider,
 		});
 	}
 

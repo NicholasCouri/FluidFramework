@@ -5,6 +5,7 @@
 
 // eslint-disable-next-line import/no-internal-modules
 import merge from "lodash/merge";
+
 import { v4 as uuid } from "uuid";
 import {
 	ITelemetryLogger,
@@ -99,7 +100,12 @@ import {
 import { CollabWindowTracker } from "./collabWindowTracker";
 import { ConnectionManager } from "./connectionManager";
 import { ConnectionState } from "./connectionState";
-import { IProtocolHandler, ProtocolHandler, ProtocolHandlerBuilder } from "./protocol";
+import {
+	OnlyValidTermValue,
+	IProtocolHandler,
+	ProtocolHandler,
+	ProtocolHandlerBuilder,
+} from "./protocol";
 
 const detachedContainerRefSeqNumber = 0;
 
@@ -281,6 +287,7 @@ export interface IPendingContainerState {
 	 */
 	savedOps: ISequencedDocumentMessage[];
 	url: string;
+	term: number;
 	clientId?: string;
 }
 
@@ -288,7 +295,7 @@ const summarizerClientType = "summarizer";
 
 export class Container
 	extends EventEmitterWithErrorHandling<IContainerEvents>
-	implements IContainer
+	implements IContainer, IContainerExperimental
 {
 	public static version = "^0.1.0";
 
@@ -583,11 +590,11 @@ export class Container
 	}
 
 	private get offlineLoadEnabled(): boolean {
+		const enabled =
+			this.mc.config.getBoolean("Fluid.Container.enableOfflineLoad") ??
+			this.options?.enableOfflineLoad === true;
 		// summarizer will not have any pending state we want to save
-		return (
-			(this.mc.config.getBoolean("Fluid.Container.enableOfflineLoad") ?? false) &&
-			this.clientDetails.capabilities.interactive
-		);
+		return enabled && this.clientDetails.capabilities.interactive;
 	}
 
 	/**
@@ -737,6 +744,9 @@ export class Container
 		// Prefix all events in this file with container-loader
 		this.mc = loggerToMonitoringContext(ChildLogger.create(this.subLogger, "Container"));
 
+		// Warning: this is only a shallow clone. Mutation of any individual loader option will mutate it for
+		// all clients that were loaded from the same loader (including summarizer clients).
+		// Tracking alternative ways to handle this in AB#4129.
 		this.options = {
 			...this.loader.services.options,
 		};
@@ -856,7 +866,7 @@ export class Container
 		return this.protocolHandler.quorum;
 	}
 
-	public dispose?(error?: ICriticalContainerError) {
+	public dispose(error?: ICriticalContainerError) {
 		this._deltaManager.close(error, true /* doDispose */);
 		this.verifyClosed();
 	}
@@ -908,15 +918,6 @@ export class Container
 				this._protocolHandler?.close();
 
 				this.connectionStateHandler.dispose();
-
-				this._context?.dispose(error !== undefined ? new Error(error.message) : undefined);
-
-				this.storageAdapter.dispose();
-
-				// Notify storage about critical errors. They may be due to disconnect between client & server knowledge
-				// about file, like file being overwritten in storage, but client having stale local cache.
-				// Driver need to ensure all caches are cleared on critical errors
-				this.service?.dispose(error);
 			} catch (exception) {
 				this.mc.logger.sendErrorEvent({ eventName: "ContainerCloseException" }, exception);
 			}
@@ -988,6 +989,12 @@ export class Container
 		// runtime matches pending ops to successful ones by clientId and client seq num, so we need to close the
 		// container at the same time we get pending state, otherwise this container could reconnect and resubmit with
 		// a new clientId and a future container using stale pending state without the new clientId would resubmit them
+		const pendingState = this.getPendingLocalState();
+		this.close();
+		return pendingState;
+	}
+
+	public getPendingLocalState(): string {
 		if (!this.offlineLoadEnabled) {
 			throw new UsageError("Can't get pending local state unless offline load is enabled");
 		}
@@ -999,22 +1006,19 @@ export class Container
 			this.resolvedUrl !== undefined && this.resolvedUrl.type === "fluid",
 			0x0d2 /* "resolved url should be valid Fluid url" */,
 		);
-		assert(!!this._protocolHandler, 0x2e3 /* "Must have a valid protocol handler instance" */);
-		assert(!!this.baseSnapshot, "no base snapshot");
-		assert(!!this.baseSnapshotBlobs, "no snapshot blobs");
+		assert(!!this.baseSnapshot, 0x5d4 /* no base snapshot */);
+		assert(!!this.baseSnapshotBlobs, 0x5d5 /* no snapshot blobs */);
 		const pendingState: IPendingContainerState = {
 			pendingRuntimeState: this.context.getPendingLocalState(),
 			baseSnapshot: this.baseSnapshot,
 			snapshotBlobs: this.baseSnapshotBlobs,
 			savedOps: this.savedOps,
 			url: this.resolvedUrl.url,
+			term: OnlyValidTermValue,
 			clientId: this.clientId,
 		};
 
-		this.mc.logger.sendTelemetryEvent({ eventName: "CloseAndGetPendingLocalState" });
-
-		// Only close here as method name suggests
-		this.close();
+		this.mc.logger.sendTelemetryEvent({ eventName: "GetPendingLocalState" });
 
 		return JSON.stringify(pendingState);
 	}
@@ -1180,7 +1184,6 @@ export class Container
 					const newError = normalizeError(error);
 					newError.addTelemetryProperties({ resolvedUrl: this.resolvedUrl?.url });
 					this.close(newError);
-					this.dispose?.(newError);
 					throw newError;
 				}
 			},
@@ -1327,7 +1330,6 @@ export class Container
 		// pre-0.58 error message: existingContextDoesNotSatisfyIncomingProposal
 		const error = new GenericError("Existing context does not satisfy incoming proposal");
 		this.close(error);
-		this.dispose?.(error);
 	}
 
 	private async getVersion(version: string | null): Promise<IVersion | undefined> {
@@ -1396,7 +1398,6 @@ export class Container
 			// if we have pendingLocalState we can load without storage; don't wait for connection
 			this.storageAdapter.connectToService(this.service).catch((error) => {
 				this.close(error);
-				this.dispose?.(error);
 			});
 		}
 
@@ -1479,7 +1480,7 @@ export class Container
 			// now set clientId to stashed clientId so live ops are correctly processed as local
 			assert(
 				this.clientId === undefined,
-				"Unexpected clientId when setting stashed clientId",
+				0x5d6 /* Unexpected clientId when setting stashed clientId */,
 			);
 			this._clientId = pendingLocalState?.clientId;
 		}
@@ -1551,7 +1552,7 @@ export class Container
 	private async createDetached(source: IFluidCodeDetails) {
 		const attributes: IDocumentAttributes = {
 			sequenceNumber: detachedContainerRefSeqNumber,
-			term: 1,
+			term: OnlyValidTermValue,
 			minimumSequenceNumber: 0,
 		};
 
@@ -1625,7 +1626,7 @@ export class Container
 			return {
 				minimumSequenceNumber: 0,
 				sequenceNumber: 0,
-				term: 1,
+				term: OnlyValidTermValue,
 			};
 		}
 
@@ -1709,7 +1710,6 @@ export class Container
 				this.processCodeProposal().catch((error) => {
 					const normalizedError = normalizeError(error);
 					this.close(normalizedError);
-					this.dispose?.(normalizedError);
 					throw error;
 				});
 			}
@@ -1801,6 +1801,7 @@ export class Container
 			(props: IConnectionManagerFactoryArgs) =>
 				new ConnectionManager(
 					serviceProvider,
+					() => this.isDirty,
 					this.client,
 					this._canReconnect,
 					ChildLogger.create(this.subLogger, "ConnectionManager"),
@@ -1982,7 +1983,6 @@ export class Container
 					{ messageType: type },
 				);
 				this.close(newError);
-				this.dispose?.(newError);
 				return -1;
 			}
 		}
@@ -2169,7 +2169,7 @@ export class Container
 			(batch: IBatchMessage[], referenceSequenceNumber?: number) =>
 				this.submitBatch(batch, referenceSequenceNumber),
 			(message) => this.submitSignal(message),
-			(error?: ICriticalContainerError) => this.dispose?.(error),
+			(error?: ICriticalContainerError) => this.dispose(error),
 			(error?: ICriticalContainerError) => this.close(error),
 			Container.version,
 			(dirty: boolean) => this.updateDirtyContainerState(dirty),
@@ -2205,4 +2205,20 @@ export class Container
 			this.context.setConnectionState(state && !readonly, this.clientId);
 		}
 	}
+}
+
+/**
+ * IContainer interface that includes experimental features still under development.
+ * @internal
+ */
+export interface IContainerExperimental extends IContainer {
+	/**
+	 * Get pending state from container. WARNING: misuse of this API can result in duplicate op
+	 * submission and potential document corruption. The blob returned MUST be deleted if and when this
+	 * container emits a "connected" event.
+	 * @returns serialized blob that can be passed to Loader.resolve()
+	 * @experimental misuse of this API can result in duplicate op submission and potential document corruption
+	 * {@link https://github.com/microsoft/FluidFramework/blob/main/packages/loader/container-loader/closeAndGetPendingLocalState.md}
+	 */
+	getPendingLocalState(): string;
 }

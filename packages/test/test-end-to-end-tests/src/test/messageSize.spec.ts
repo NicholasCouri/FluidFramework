@@ -118,10 +118,7 @@ describeNoCompat("Message size", (getTestObjectProvider) => {
 
 	itExpects(
 		"A large op will close the container when compression is disabled",
-		[
-			{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" },
-			{ eventName: "fluid:telemetry:Container:ContainerDispose", error: "BatchTooLarge" },
-		],
+		[{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" }],
 		async () => {
 			const maxMessageSizeInBytes = 1024 * 1024; // 1Mb
 			await setupContainers(disableCompressionConfig);
@@ -159,10 +156,7 @@ describeNoCompat("Message size", (getTestObjectProvider) => {
 
 	itExpects(
 		"Small batches pass while disconnected, fail when the container connects and compression is disabled",
-		[
-			{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" },
-			{ eventName: "fluid:telemetry:Container:ContainerDispose", error: "BatchTooLarge" },
-		],
+		[{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" }],
 		async () => {
 			const maxMessageSizeInBytes = 600 * 1024;
 			await setupContainers(disableCompressionConfig);
@@ -240,10 +234,7 @@ describeNoCompat("Message size", (getTestObjectProvider) => {
 
 	itExpects(
 		"Large ops fail when compression is disabled and the content is over max op size",
-		[
-			{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" },
-			{ eventName: "fluid:telemetry:Container:ContainerDispose", error: "BatchTooLarge" },
-		],
+		[{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" }],
 		async function () {
 			const maxMessageSizeInBytes = 5 * 1024 * 1024; // 5MB
 			await setupContainers(disableCompressionConfig);
@@ -257,10 +248,7 @@ describeNoCompat("Message size", (getTestObjectProvider) => {
 
 	itExpects(
 		"Large ops fail when compression is disabled by feature gate and the content is over max op size",
-		[
-			{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" },
-			{ eventName: "fluid:telemetry:Container:ContainerDispose", error: "BatchTooLarge" },
-		],
+		[{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" }],
 		async function () {
 			const maxMessageSizeInBytes = 5 * 1024 * 1024; // 5MB
 			await setupContainers(testContainerConfig, {
@@ -276,10 +264,7 @@ describeNoCompat("Message size", (getTestObjectProvider) => {
 
 	itExpects(
 		"Large ops fail when compression enabled and compressed content is over max op size",
-		[
-			{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" },
-			{ eventName: "fluid:telemetry:Container:ContainerDispose", error: "BatchTooLarge" },
-		],
+		[{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" }],
 		async function () {
 			const maxMessageSizeInBytes = 5 * 1024 * 1024; // 5MB
 			await setupContainers({
@@ -360,10 +345,7 @@ describeNoCompat("Message size", (getTestObjectProvider) => {
 
 		itExpects(
 			"Large ops fail when compression chunking is disabled by feature gate",
-			[
-				{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" },
-				{ eventName: "fluid:telemetry:Container:ContainerDispose", error: "BatchTooLarge" },
-			],
+			[{ eventName: "fluid:telemetry:Container:ContainerClose", error: "BatchTooLarge" }],
 			async function () {
 				const maxMessageSizeInBytes = 5 * 1024 * 1024; // 5MB
 				await setupContainers(chunkingBatchesConfig, {
@@ -606,9 +588,8 @@ describeNoCompat("Message size", (getTestObjectProvider) => {
 						// This is not supported by the local server due to chunking. See ADO:2690
 						// This test is flaky on tinylicious. See ADO:2964
 						if (
-							config.payloadGenerator === generateRandomStringOfSize &&
-							(provider.driver.type === "local" ||
-								provider.driver.type === "tinylicious")
+							provider.driver.type === "local" ||
+							provider.driver.type === "tinylicious"
 						) {
 							this.skip();
 						}
