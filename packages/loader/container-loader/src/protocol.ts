@@ -58,11 +58,18 @@ export class ProtocolHandler extends ProtocolOpHandler implements IProtocolHandl
 		);
 
 		// Join / leave signals are ignored for "write" clients in favor of join / leave ops
-		this.quorum.on("addMember", (clientId, details) =>
-			audience.addMember(clientId, details.client),
-		);
-		this.quorum.on("removeMember", (clientId) => audience.removeMember(clientId));
+		this.quorum.on("addMember", (clientId, details) => {
+			// console.log(`${new Date().toISOString()} clientId added to quorum ${clientId}`);
+			audience.addMember(clientId, details.client);
+		});
+		this.quorum.on("removeMember", (clientId) => {
+			console.log(`${new Date().toISOString()} clientId removed from quorum ${clientId}`);
+			audience.removeMember(clientId);
+		});
 		for (const [clientId, details] of this.quorum.getMembers()) {
+			// console.log(
+			// 	`${new Date().toISOString()} clientId added from snapshot quorum ${clientId}`,
+			// );
 			this.audience.addMember(clientId, details.client);
 		}
 	}

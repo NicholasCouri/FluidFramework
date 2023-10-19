@@ -103,12 +103,14 @@ export class ProtocolOpHandler implements IProtocolHandler {
 					client: join.detail,
 					sequenceNumber: systemJoinMessage.sequenceNumber,
 				};
+				console.log(`${new Date().toISOString()} MessageType.ClientJoin clientId added to quorum ${join.clientId}`);
 				this._quorum.addMember(join.clientId, member);
 				break;
 
 			case MessageType.ClientLeave:
 				const systemLeaveMessage = message as ISequencedDocumentSystemMessage;
 				const clientId = JSON.parse(systemLeaveMessage.data) as string;
+				console.log(`${new Date().toISOString()} MessageType.ClientJoin clientId added to quorum ${clientId}`);
 				this._quorum.removeMember(clientId);
 				break;
 

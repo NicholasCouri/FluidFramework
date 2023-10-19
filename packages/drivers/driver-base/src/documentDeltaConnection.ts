@@ -571,6 +571,11 @@ export class DocumentDeltaConnection
 
 				this.checkpointSequenceNumber = response.checkpointSequenceNumber;
 
+				this.logger.sendTelemetryEvent({
+					eventName: "connect_document_successnichoc",
+					clientId: response.clientId,
+				});
+
 				this.removeConnectionListeners();
 				resolve(response);
 			});

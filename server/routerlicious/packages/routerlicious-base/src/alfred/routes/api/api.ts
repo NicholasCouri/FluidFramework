@@ -205,6 +205,7 @@ function sendLeave(
 	producer: core.IProducer,
 ) {
 	const leaveMessage = craftClientLeaveMessage(tenantId, documentId, clientId);
+	Lumberjack.info(`Sending leave message ${clientId}`);
 	producer.send([leaveMessage], tenantId, documentId).catch((err) => {
 		const lumberjackProperties = {
 			...getLumberBaseProperties(documentId, tenantId),

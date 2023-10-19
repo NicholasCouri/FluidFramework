@@ -145,6 +145,7 @@ export function normalizeError(
 
 	// We have to construct a new Fluid Error, copying safe properties over
 	const { message, stack } = extractLogSafeErrorProperties(error, false /* sanitizeStack */);
+	console.log(`Message Nichoc${message} - ${stack}`);
 	const fluidError: IFluidErrorBase = new NormalizedLoggingError({
 		message,
 		stack,

@@ -40,9 +40,11 @@ import {
 } from "./optionsMatrix";
 
 function printStatus(runConfig: IRunConfig, message: string) {
-	if (runConfig.verbose) {
-		console.log(`${runConfig.runId.toString().padStart(3)}> ${message}`);
-	}
+	// if (runConfig.verbose) {
+	console.log(
+		`${new Date().toISOString()} - ${runConfig.runId.toString().padStart(3)}> ${message}`,
+	);
+	// }
 }
 
 async function main() {
@@ -123,7 +125,13 @@ async function main() {
 		try {
 			logger.sendErrorEvent({ eventName: "uncaughtExceptionMonitor", origin }, error);
 		} catch (e) {
-			console.error("Error during logging unhandled exception: ", e);
+			console.error(
+				`${new Date().toISOString()} - Error during logging unhandled exception:"${error}"-e=-"${JSON.stringify(
+					e,
+					undefined,
+					2,
+				)}".`,
+			);
 		}
 	});
 
@@ -234,7 +242,7 @@ async function runnerProcess(
 				details: JSON.stringify({
 					loaderOptions: runConfig.loaderConfig,
 					containerOptions: containerOptions[runConfig.runId % containerOptions.length],
-					logLevel: runConfig.logger.minLogLevel,
+					logLevel: LogLevel.verbose,
 					configurations: { ...globalConfigurations, ...testConfiguration },
 				}),
 			});
@@ -464,10 +472,20 @@ async function scheduleOffline(
 ): Promise<string | undefined> {
 	return new Promise<void>((resolve) => {
 		if (container.connectionState !== ConnectionState.Connected && !container.closed) {
-			container.once("connected", () => resolve());
-			container.once("closed", () => resolve());
-			container.once("disposed", () => resolve());
+			container.once("connected", () => {
+				printStatus(runConfig, `scheduleOffline connected ${container.clientId} !`);
+				resolve();
+			});
+			container.once("closed", () => {
+				printStatus(runConfig, `scheduleOffline closed ${container.clientId} !`);
+				resolve();
+			});
+			container.once("disposed", () => {
+				printStatus(runConfig, `scheduleOffline disposed ${container.clientId} !`);
+				resolve();
+			});
 		} else {
+			printStatus(runConfig, `scheduleOffline no state ${container.clientId} !`);
 			resolve();
 		}
 	})
@@ -481,17 +499,22 @@ async function scheduleOffline(
 				await new Promise<void>((resolve) => setTimeout(resolve, injectionTime));
 
 				if (container.closed) {
+					printStatus(runConfig, `scheduleOffline closed1 ${container.clientId} !`);
 					return undefined;
 				}
 				assert(container.resolvedUrl !== undefined, "no url");
 				const ds = dsf.documentServices.get(container.resolvedUrl);
 				assert(!!ds, "no documentServices");
 				const offlineTime = random.integer(offlineDurationMinMs, offlineDurationMaxMs);
-				printStatus(runConfig, `going offline for ${offlineTime / 1000} seconds!`);
+				printStatus(
+					runConfig,
+					`scheduleOffline going offline for ${offlineTime / 1000} seconds!`,
+				);
 				ds.goOffline();
 
 				await new Promise<void>((resolve) => setTimeout(resolve, offlineTime));
 				if (container.closed) {
+					printStatus(runConfig, `scheduleOffline closed2 ${container.clientId} !`);
 					return undefined;
 				}
 				if (
@@ -499,16 +522,20 @@ async function scheduleOffline(
 					random.real() < stashPercent &&
 					container.closeAndGetPendingLocalState
 				) {
-					printStatus(runConfig, "closing offline container!");
+					printStatus(
+						runConfig,
+						`scheduleOffline closing offline container ${container.clientId}!`,
+					);
 					return container.closeAndGetPendingLocalState();
 				}
-				printStatus(runConfig, "going online!");
+				printStatus(runConfig, `scheduleOffline going online! ${container.clientId}`);
 				ds.goOnline();
 				return schedule();
 			};
 			return schedule();
 		})
 		.catch(async (e) => {
+			printStatus(runConfig, `ScheduleOfflineFailed ${container.clientId}`);
 			runConfig.logger.sendErrorEvent(
 				{
 					eventName: "ScheduleOfflineFailed",

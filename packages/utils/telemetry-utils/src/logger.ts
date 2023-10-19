@@ -425,12 +425,12 @@ export class ChildLogger extends TelemetryLogger {
 	}
 
 	public get minLogLevel(): LogLevel | undefined {
-		return this.baseLogger.minLogLevel;
+		return LogLevel.verbose;
 	}
 
 	private shouldFilterOutEvent(event: ITelemetryBaseEvent, logLevel?: LogLevel): boolean {
 		const eventLogLevel = logLevel ?? LogLevel.default;
-		const configLogLevel = this.baseLogger.minLogLevel ?? LogLevel.default;
+		const configLogLevel = LogLevel.verbose;
 		// Filter out in case event log level is below what is wanted in config.
 		return eventLogLevel < configLogLevel;
 	}

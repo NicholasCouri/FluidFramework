@@ -535,6 +535,12 @@ export class Container
 			// Propagate current connection state through the system.
 			this.propagateConnectionState(true /* initial transition */);
 			this._lifecycleState = "loaded";
+		} else {
+			this.mc.logger.sendTelemetryEvent({
+				eventName: "NichocDidNotPropagateConnectionStateLoaded",
+				pendingClientId: this._clientId,
+				lifecycleState: this._lifecycleState,
+			});
 		}
 	}
 
@@ -868,12 +874,23 @@ export class Container
 					}
 					this.logConnectionStateChangeTelemetry(value, oldState, reason);
 					if (this._lifecycleState === "loaded") {
+						this.mc.logger.sendTelemetryEvent({
+							eventName: "NichocDidNotPropagateConnectionStateLoaded",
+							pendingClientId: this._clientId,
+							value,
+						});
 						this.propagateConnectionState(
 							false /* initial transition */,
 							value === ConnectionState.Disconnected
 								? reason
 								: undefined /* disconnectedReason */,
 						);
+					} else {
+						this.mc.logger.sendTelemetryEvent({
+							eventName: "NichocDidNotPropagateConnectionState",
+							pendingClientId: this._clientId,
+							lifecycleState: this._lifecycleState,
+						});
 					}
 				},
 				shouldClientJoinWrite: () => this._deltaManager.connectionManager.shouldJoinWrite(),
@@ -1062,6 +1079,7 @@ export class Container
 						eventName: "ContainerDispose",
 						// Only log error if container isn't closed
 						category: !this.closed && error !== undefined ? "error" : "generic",
+						clientId: this.clientId,
 					},
 					error,
 				);
@@ -1364,6 +1382,7 @@ export class Container
 			connectionMode: this.connectionMode,
 			connectionState: ConnectionState[this.connectionState],
 			duration,
+			clientId: this.clientId,
 		});
 
 		this._deltaManager.connectionManager.setAutoReconnect(mode, reason);
@@ -2368,6 +2387,9 @@ export class Container
 		}
 		this._loadedFromVersion = version;
 		const snapshot = (await this.storageAdapter.getSnapshotTree(version)) ?? undefined;
+		// if (snapshot !== undefined) {
+		// 	throw new Error(packageNotFactoryError);
+		// }
 
 		if (snapshot === undefined && version !== undefined) {
 			this.mc.logger.sendErrorEvent({ eventName: "getSnapshotTreeFailed", id: version.id });
@@ -2479,6 +2501,12 @@ export class Container
 			 * See https://dev.azure.com/fluidframework/internal/_workitems/edit/1246
 			 */
 			this.runtime.setConnectionState(state && !readonly, this.clientId);
+		} else {
+			this.mc.logger.sendTelemetryEvent({
+				eventName: "ConnectChangeWihtRuntimeDisposed",
+				clientId: this.clientId,
+				connected: state && !readonly,
+			});
 		}
 	}
 

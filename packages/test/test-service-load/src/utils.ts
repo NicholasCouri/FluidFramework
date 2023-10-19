@@ -11,7 +11,11 @@ import {
 	OdspTestDriver,
 } from "@fluid-internal/test-drivers";
 import { makeRandom } from "@fluid-internal/stochastic-test-utils";
-import { ITelemetryBaseEvent, LogLevel } from "@fluidframework/core-interfaces";
+import {
+	ITelemetryBaseEvent,
+	ITelemetryBaseLogger,
+	LogLevel,
+} from "@fluidframework/core-interfaces";
 import { assert, LazyPromise } from "@fluidframework/core-utils";
 import { IContainer, IFluidCodeDetails } from "@fluidframework/container-definitions";
 import { IDetachedBlobStorage, Loader } from "@fluidframework/container-loader";
@@ -43,16 +47,45 @@ import { ILoadTestConfig, ITestConfig } from "./testConfigFile";
 
 const packageName = `${pkgName}@${pkgVersion}`;
 
+class Logger implements ITelemetryBaseLogger {
+	public constructor(private readonly containerDescription: string) {}
+	async flush(runInfo?: { url: string; runId?: number }): Promise<void> {}
+
+	// ITelemetryBaseLogger implementation
+	public send(event: ITelemetryBaseEvent) {
+		if (event.category === "error") {
+			// Stack is not output properly (with newlines), if done as part of event
+			const stack: string | undefined = event.stack as string | undefined;
+			const error = new Error(
+				`An error has been logged from ${this.containerDescription}!\n`,
+			);
+			error.stack = stack;
+			// throw instead of printing an error to fail tests
+			throw error;
+		} else {
+			console.log({
+				time: new Date().toISOString(),
+				name: event.eventName,
+				value: event.value as number,
+				tagOverrides: {
+					category: event.category,
+				},
+				properties: event,
+			});
+		}
+	}
+}
 class FileLogger implements ITelemetryBufferedLogger {
 	private static readonly loggerP = (minLogLevel?: LogLevel) =>
-		new LazyPromise<FileLogger>(async () => {
+		new LazyPromise<FileLogger | Logger>(async () => {
 			if (process.env.FLUID_TEST_LOGGER_PKG_PATH !== undefined) {
 				await import(process.env.FLUID_TEST_LOGGER_PKG_PATH);
 				const logger = getTestLogger?.();
 				assert(logger !== undefined, "Expected getTestLogger to return something");
 				return new FileLogger(logger, minLogLevel);
 			} else {
-				return new FileLogger(undefined, minLogLevel);
+				// nichoc
+				return new Logger("TST");
 			}
 		});
 
@@ -187,7 +220,7 @@ export async function initialize(
 		generateConfigurations(seed, optionsOverride?.configurations),
 	);
 
-	const minLogLevel = random.pick([LogLevel.verbose, LogLevel.default]);
+	const minLogLevel = random.pick([LogLevel.verbose, LogLevel.verbose]);
 	const logger = await createLogger(
 		{
 			driverType: testDriver.type,
@@ -204,7 +237,7 @@ export async function initialize(
 			loaderOptions,
 			containerOptions,
 			configurations: { ...globalConfigurations, ...configurations },
-			logLevel: minLogLevel,
+			logLevel: LogLevel.verbose,
 		}),
 	});
 
