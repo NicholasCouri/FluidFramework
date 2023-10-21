@@ -379,6 +379,10 @@ export class DocumentDeltaConnection
 		// so _disposed & socket.connected might be not in sync while processing
 		// "dispose" event.
 		if (this._disposed) {
+			this.logger.sendTelemetryEvent({
+				eventName: "nichocdisposedalready",
+				socket: this.socket.id,
+			});
 			return;
 		}
 
@@ -411,6 +415,12 @@ export class DocumentDeltaConnection
 	 * @param reason - reason for disconnect
 	 */
 	protected disconnectCore() {
+		this.logger.sendTelemetryEvent({
+			eventName: "nichocdisconnectCore",
+			socket: this.socket.id,
+		});
+
+
 		this.socket.disconnect();
 	}
 

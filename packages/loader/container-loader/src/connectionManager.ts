@@ -764,7 +764,7 @@ export class ConnectionManager implements IConnectionManager {
 		);
 		this.pendingConnection.abort();
 		this.pendingConnection = undefined;
-		this.logger.sendTelemetryEvent({ eventName: "ConnectionCancelReceived" });
+		this.logger.sendTelemetryEvent({ eventName: "ConnectionCancelReceived", reason: reason?.text });
 		this.props.cancelConnectionHandler({
 			text: `Cancel Pending Connection due to ${reason.text}`,
 			error: reason.error,

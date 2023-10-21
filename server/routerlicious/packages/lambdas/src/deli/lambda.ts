@@ -1498,7 +1498,9 @@ export class DeliLambda extends TypedEventEmitter<IDeliLambdaEvents> implements 
 				idleClient.clientId,
 				idleClient.serverMetadata,
 			);
-			Lumberjack.info(`Sending idle write client leave message to raw deltas ${idleClient.clientId}`);
+			Lumberjack.info(
+				`Sending idle write client leave message to raw deltas ${idleClient.clientId}`,
+			);
 			this.sendToRawDeltas(leaveMessage).catch((error) => {
 				const lumberjackProperties = {
 					...getLumberBaseProperties(this.documentId, this.tenantId),
@@ -1527,7 +1529,9 @@ export class DeliLambda extends TypedEventEmitter<IDeliLambdaEvents> implements 
 			// write client idle is handled by checkIdleWriteClients
 			if (client.mode === "read" && exp < currentTime) {
 				const leaveMessage = this.createLeaveMessage(clientId);
-				Lumberjack.info(`checkIdleReadClients idle write client leave message to raw deltas ${clientId}`);
+				Lumberjack.info(
+					`checkIdleReadClients idle write client leave message to raw deltas ${clientId}`,
+				);
 				this.sendToRawDeltas(leaveMessage).catch((error) => {
 					const lumberjackProperties = {
 						...getLumberBaseProperties(this.documentId, this.tenantId),

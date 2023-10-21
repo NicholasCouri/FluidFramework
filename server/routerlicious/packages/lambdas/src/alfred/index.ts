@@ -268,6 +268,9 @@ export function configureWebSocketServices(
 		function setExpirationTimer(mSecUntilExpiration: number) {
 			clearExpirationTimer();
 			expirationTimer = setTimeout(() => {
+				Lumberjack.info(
+					`NichocExpiration Timer - Timeout =${connectionsMap.size}, ${socket.id}`,
+				);
 				socket.disconnect(true);
 			}, mSecUntilExpiration);
 		}
@@ -693,6 +696,7 @@ export function configureWebSocketServices(
 					.then(() => {
 						// Keep track of disconnected clientIds so that we don't repeat the disconnect signal
 						// for the same clientId if retrying when connectDocument completes after disconnectDocument.
+						Lumberjack.info(`Nichoc Disconnected Client ID ${clientId}.`);
 						clientIdConnectionsDisconnected.add(clientId);
 					})
 					.catch((error) => {
@@ -1108,9 +1112,15 @@ export function configureWebSocketServices(
 				disconnectMetric.setProperties({
 					...getLumberBaseProperties(documentId, tenantId),
 				});
+				Lumberjack.info(
+					`Nichoc - Disconnecting Document after socked disconnect doc ${documentId}, ${socket.id}`,
+				);
 			}
 
 			try {
+				Lumberjack.info(
+					`Nichoc - Disconnecting Document after socked disconnect ${socket.id}`,
+				);
 				disconnectDocumentP = disconnectDocument();
 				await disconnectDocumentP;
 				disconnectMetric.success(`Successfully disconnected.`);

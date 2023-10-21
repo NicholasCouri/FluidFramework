@@ -875,9 +875,10 @@ export class Container
 					this.logConnectionStateChangeTelemetry(value, oldState, reason);
 					if (this._lifecycleState === "loaded") {
 						this.mc.logger.sendTelemetryEvent({
-							eventName: "NichocDidNotPropagateConnectionStateLoaded",
+							eventName: "NichocDidPropagateConnectionStateLoaded",
 							pendingClientId: this._clientId,
 							value,
+							reason: reason?.text,
 						});
 						this.propagateConnectionState(
 							false /* initial transition */,
@@ -890,6 +891,7 @@ export class Container
 							eventName: "NichocDidNotPropagateConnectionState",
 							pendingClientId: this._clientId,
 							lifecycleState: this._lifecycleState,
+							reason: reason?.text,
 						});
 					}
 				},
